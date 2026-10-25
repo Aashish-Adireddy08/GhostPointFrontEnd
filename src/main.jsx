@@ -5,6 +5,7 @@ import {openStream} from './stream';
 import {publishWebcam} from './publish';
 import './style.css';
 import './local-demo.css';
+import HudViewer from './HudViewer';
 
 const agents=[{id:'01',name:'Alpha',role:'Team lead',port:5000},{id:'02',name:'Bravo',role:'Support',port:5002}];
 function Feed({agent,demo,url,enabled,retry,onStatus,focus,setFocus}){
@@ -58,4 +59,4 @@ function App(){
  {help&&<div className="modal-backdrop"><div className="modal"><button className="close" aria-label="Close guide" onClick={()=>setHelp(false)}><X/></button><h2>Bring your cameras online</h2><p>1. Send each iPhone’s encoded H.264 video as RTP/UDP to separate cloud ports (5000 and 5002).</p><p>2. On your cloud server, receive each stream with GStreamer and bridge it to a WebRTC gateway exposing one WHEP endpoint per camera.</p><p>3. Configure HTTPS, CORS, and STUN/TURN on the gateway. Paste both playback endpoints into connection settings, then select Connect gateway.</p><p>The React viewer never opens a raw UDP socket. The cloud media bridge and iPhone capture app must be supplied separately. Demo imagery and ranging are synthetic.</p><button className="button primary full" onClick={()=>{setHelp(false);setDraft(urls);setSettings(true);}}>Configure endpoints <ArrowUpRight size={15}/></button></div></div>}
  </div>;
 }
-createRoot(document.getElementById('root')).render(<App/>);
+createRoot(document.getElementById('root')).render(new URLSearchParams(location.search).get('hud')==='1'?<HudViewer/>:<App/>);

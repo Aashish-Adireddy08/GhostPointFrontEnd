@@ -1,0 +1,2 @@
+# Preserve unified-diff context lines and LF endings in the app integration patch.
+/iphone-hud/*.patch -text -whitespace

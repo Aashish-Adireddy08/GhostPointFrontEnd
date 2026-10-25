@@ -1,5 +1,11 @@
 # GhostPoint Command
 
+## iPhone HUD broadcast
+
+Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
+
+The external synthetic video transport and cleanup tests passed. The new iPhone native code has not been built or tested on a device; complete HUD capture is still an acceptance blocker. TURN is not configured for restrictive networks. The older GStreamer setup described below remains a separate demo path.
+
 React frontend for viewing two iPhone camera streams through a cloud WebRTC gateway. The attached brief is product context only: this does not implement the Flutter/UWB application.
 
 ## Local webcam demo
