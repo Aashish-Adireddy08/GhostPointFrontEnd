@@ -29,6 +29,12 @@ class ProxyTests(unittest.TestCase):
             def log_message(self, *_args):
                 pass
 
+            def do_DELETE(self):
+                requests.append((self.path, self.headers['Authorization']))
+                self.send_response(200)
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+
         self.gateway = ThreadingHTTPServer(('127.0.0.1', 0), Gateway)
         self.directory = tempfile.TemporaryDirectory()
         Path(self.directory.name, 'index.html').write_text('viewer')
@@ -61,15 +67,20 @@ class ProxyTests(unittest.TestCase):
             self.assertEqual(self.request('POST', '/media/hud/' + endpoint)[0], 201)
 
     def test_protocol_proxy_and_same_origin_location(self):
-        for path, role in (('/media/hud/whip', 'publisher'), ('/media/hud/whep', 'viewer')):
-            status, headers, body = self.request('POST', path)
-            self.assertEqual(status, 201)
-            self.assertEqual(body, b'answer')
-            self.assertEqual(headers['Location'], path + '/session-id')
-            self.assertEqual(self.requests[-1], (path[len('/media'):], self.web.credentials[role]))
+        for stream in ('hud', 'hud2'):
+            for kind, role in (('whip', 'publisher'), ('whep', 'viewer')):
+                path = '/media/' + stream + '/' + kind
+                status, headers, body = self.request('POST', path)
+                self.assertEqual(status, 201)
+                self.assertEqual(body, b'answer')
+                self.assertEqual(headers['Location'], path + '/session-id')
+                self.assertEqual(self.requests[-1], (path[len('/media'):], self.web.credentials[role]))
+                self.assertEqual(self.request('DELETE', headers['Location'])[0], 200)
+                self.assertEqual(self.requests[-1][0], path[len('/media'):] + '/session-id')
 
     def test_unrelated_paths_and_queries_blocked(self):
-        for path in ('/media/webcam/whip', '/media/hud/whip?secret=bad', '/media/../api', '/media/hud/whip/a/b'):
+        self.assertEqual(self.request('POST', '/media/hud2/whip')[0], 201)
+        for path in ('/media/webcam/whip', '/media/hud3/whip', '/media/hud/whip?secret=bad', '/media/../api', '/media/hud/whip/a/b'):
             self.assertEqual(self.request('POST', path, 'publisher')[0], 404)
 
 

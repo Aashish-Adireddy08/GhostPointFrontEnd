@@ -48,13 +48,21 @@ authInternalUsers:
     permissions:
       - action: publish
         path: hud
+      - action: publish
+        path: hud2
   - user: hud-viewer
     pass: {credentials['view_password']}
     permissions:
       - action: read
         path: hud
+      - action: read
+        path: hud2
 paths:
   hud:
+    source: publisher
+    overridePublisher: false
+    record: false
+  hud2:
     source: publisher
     overridePublisher: false
     record: false

@@ -2,7 +2,7 @@
 
 ## iPhone HUD broadcast
 
-Current release: **1.2.0** (public testing, no login required for viewing or publishing). Phone broadcasts now appear directly in the original command dashboard. Click **Watch phone broadcast** on `/`, or open `/?hud=1` to start waiting automatically. The first camera panel shows the phone's complete portrait screen; the second stays idle. The footer shows the package version. `npm run build` writes `/version.json` containing the version, full commit SHA and UTC build time. Bump `package.json` for future releases and deploy the generated build from a clean commit.
+Current release: **1.3.0** (public testing, no login). The integrated command dashboard displays **Phone 1** (`hud`) and **Phone 2** (`hud2`) independently. Open `/?hud=1` to wait automatically, or click **Watch phone broadcasts** on `/`. Both portrait screens stay fully visible. The footer shows the version; `/version.json` records the full source commit and build time.
 
 Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
 
@@ -24,7 +24,7 @@ The execution policy option applies only to those individual PowerShell processe
 
 Open `http://127.0.0.1:5174` and click **Start webcam demo**, then allow camera access. Both panels display the same webcam; the microphone is off. Click **Stop webcam** to stop capture. Keep the launcher terminal open, and press Ctrl+C there to stop the servers. See [local-demo/README.md](local-demo/README.md) for details and troubleshooting.
 
-The video actually goes through a local MediaMTX server: browser webcam capture → WHIP → MediaMTX → two WHEP playback connections → dashboard. WebRTC TCP fallback is enabled for local browsers where UDP fails. The iPhone/GStreamer RTP/UDP path below remains a separate integration. MediaMTX is installed locally rather than committed; webcam images, recordings, machine settings, node_modules, and build output are excluded from the repository.
+The video actually goes through a local MediaMTX server: browser webcam capture â†’ WHIP â†’ MediaMTX â†’ two WHEP playback connections â†’ dashboard. WebRTC TCP fallback is enabled for local browsers where UDP fails. The iPhone/GStreamer RTP/UDP path below remains a separate integration. MediaMTX is installed locally rather than committed; webcam images, recordings, machine settings, node_modules, and build output are excluded from the repository.
 
 ## Run locally
 
@@ -37,7 +37,7 @@ Production build: `npm run build` (output: `dist/`). Nothing is pushed or deploy
 
 ## Connect cameras
 
-The transport path is **iPhone H.264 → RTP/UDP → cloud GStreamer receiver → WebRTC gateway → React**. A web browser cannot bind raw UDP ports. Each camera needs a separate WHEP playback endpoint, e.g. `https://gateway.example.com/alpha/whep` and `/bravo/whep`.
+The transport path is **iPhone H.264 â†’ RTP/UDP â†’ cloud GStreamer receiver â†’ WebRTC gateway â†’ React**. A web browser cannot bind raw UDP ports. Each camera needs a separate WHEP playback endpoint, e.g. `https://gateway.example.com/alpha/whep` and `/bravo/whep`.
 
 Open connection settings, save both URLs, and click **Connect gateway**. Demo mode is explicitly synthetic and includes no actual camera or UWB data. Real mode shows measured inbound frame rate and bitrate; it does not invent agent locations. Focus view expands one feed. Disconnect releases peer connections and requests WHEP resource deletion when the server returns a Location header.
 
@@ -46,7 +46,7 @@ The cloud server and iPhone capture app are not included. The local webcam demo 
 - Receive two distinct RTP/H.264 streams on configured ports (UI defaults are 5000 and 5002).
 - Match payload types, codec parameters, packetization, and SPS/PPS emitted by the iPhone sender.
 - Bridge media to WebRTC using GStreamer's `webrtcbin` or a compatible media server.
-- Implement WHEP POST (SDP offer → SDP answer), resource Location, and DELETE.
+- Implement WHEP POST (SDP offer â†’ SDP answer), resource Location, and DELETE.
 - Allow viewer origin via CORS, allow Content-Type and POST/DELETE, expose Location, and handle OPTIONS.
 - Provide HTTPS and suitable ICE candidates/firewall rules. Cross-network use may require TURN; add short-lived ICE server configuration to `openStream` in `src/stream.js` through your authenticated backend. Never ship permanent TURN credentials in source.
 
@@ -59,3 +59,13 @@ gst-launch-1.0 udpsrc port=5000 caps="application/x-rtp,media=video,encoding-nam
 Use a second pipeline on port 5002. In your production gateway replace the diagnostic decode/sink with the gateway-specific RTP/WebRTC media path. Transport/authentication, iOS capture, and gateway configuration need integration on your actual server. Endpoint URLs are stored locally; no tokens are collected by this prototype. Automatic reconnect is not implemented; disconnect and connect to retry.
 
 References: [GStreamer webrtcbin](https://gstreamer.freedesktop.org/documentation/webrtc/), [WHEP draft](https://datatracker.ietf.org/doc/draft-ietf-wish-whep/), [WebRTC API](https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API).
+
+## Two iPhones
+
+Both phones need the uwbhud `iphone-hud-broadcast` branch at commit `4768c24` or newer (Allow broadcast stream name in WHIP URL). The older bundled native patch is historical; use that current native branch for named stream support.
+
+- Phone 1: `https://parents-costumes-eco-threshold.trycloudflare.com/media/hud/whip`
+- Phone 2: `https://parents-costumes-eco-threshold.trycloudflare.com/media/hud2/whip`
+- Viewer: `https://parents-costumes-eco-threshold.trycloudflare.com/?hud=1`
+
+Tap Start Broadcast on each phone and keep the app foregrounded. Phone 1 and Phone 2 have separate dashboard players; either may start first. The temporary tunnel origin can change after a tunnel restart. No physical two-iPhone capture test was performed here.

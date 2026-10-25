@@ -1,5 +1,12 @@
 # Changes
 
+## 1.3.0 — 2026-10-25
+
+- Apply the supplied two-phone server patch: permit `hud` and `hud2` WHIP/WHEP routes, session deletion, and MediaMTX publish/read permissions.
+- Connect both integrated dashboard panels independently, labeled Phone 1 and Phone 2. A missing publisher waits without blocking the other panel.
+- Add a two-publisher external smoke test with distinct portrait frames and independent stop/cleanup checks.
+- Native named-stream support is available in uwbhud branch `iphone-hud-broadcast`, commit `4768c24` (Allow broadcast stream name in WHIP URL). Actual physical phone capture remains a device acceptance check.
+
 ## 1.2.0 — 2026-10-25
 
 - Display the iPhone broadcast inside the original Ghostpoint command dashboard instead of a separate plain viewer.

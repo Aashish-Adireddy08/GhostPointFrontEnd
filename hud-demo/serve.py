@@ -38,12 +38,13 @@ class Handler(SimpleHTTPRequestHandler):
 
     def proxy(self):
         path = urlsplit(self.path)
-        match = re.fullmatch(r'/media/hud/(whip|whep)(/[a-zA-Z0-9-]+)?', path.path)
+        match = re.fullmatch(r'/media/(hud|hud2)/(whip|whep)(/[a-zA-Z0-9-]+)?', path.path)
         if not match or path.query or path.fragment:
             self.send_error(404)
             return
-        role = 'publisher' if match[1] == 'whip' else 'viewer'
-        if self.command not in ('POST', 'DELETE', 'OPTIONS') or (self.command == 'POST' and match[2]):
+        stream, kind, session = match[1], match[2], match[3]
+        role = 'publisher' if kind == 'whip' else 'viewer'
+        if self.command not in ('POST', 'DELETE', 'OPTIONS') or (self.command == 'POST' and session):
             self.send_error(405)
             return
         if self.headers.get('Transfer-Encoding'):
@@ -69,7 +70,7 @@ class Handler(SimpleHTTPRequestHandler):
             for key, value in response.getheaders():
                 if key.lower() == 'location':
                     location = urlsplit(value)
-                    if not location.path.startswith('/hud/' + match[1] + '/'):
+                    if not location.path.startswith('/' + stream + '/' + kind + '/'):
                         continue
                     value = '/media' + location.path
                 elif key.lower() not in ('content-type', 'etag', 'accept-patch'):

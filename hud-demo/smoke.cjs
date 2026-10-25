@@ -44,7 +44,7 @@ async function main() {
     });
     await page.waitForFunction(() => window.testPublisher.pc.connectionState === 'connected', null, {timeout: 30000})
       .catch(async error => {throw new Error('Publisher media failed: ' + await page.evaluate(() => window.testPublisher.pc.connectionState) + '; ' + error.message);});
-    await page.getByRole('button', {name: 'Watch phone broadcast', exact: true}).click();
+    await page.getByRole('button', {name: 'Watch phone broadcasts', exact: true}).click();
     await page.waitForFunction(() => document.querySelector('video').videoWidth > 0 && document.querySelector('video').currentTime > 1, null, {timeout: 30000})
       .catch(async error => {throw new Error('Dashboard media failed: ' + await page.locator('.feed').first().textContent() + '; ' + error.message);});
     const result = await page.evaluate(async () => {

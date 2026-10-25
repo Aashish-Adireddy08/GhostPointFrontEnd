@@ -1,6 +1,6 @@
 # iPhone HUD test deployment
 
-Current version 1.1.1 is public testing mode: no username or password is required to view or publish. Anyone with the test URL can use it. Internal MediaMTX credentials remain on the server and are injected by the loopback proxy; they are not client requirements. The authentication descriptions below describe the original deployment, superseded for public clients by version 1.1.1.
+Current version 1.3.0 is public testing mode: no username or password is required to view or publish. Anyone with the test URL can use it. Internal MediaMTX credentials remain on the server and are injected by the loopback proxy; they are not client requirements. The authentication descriptions below describe the original deployment, superseded for public clients by version 1.1.1.
 
 Versioned updates use a separate `releases/hud-<version>-<commit>` directory for `dist/` and `hud-demo/`. Only `ghostpoint-hud-web.service` moves to the new code; MediaMTX, the existing credentials/runtime, and the HTTPS tunnel keep running. Before switching, the previous web unit and `current-hud-release.txt` are saved under the original runtime's `backup/` directory. The public `/version.json` endpoint records the deployed package version, commit and UTC build timestamp. The HUD viewer displays the version/commit, and the dashboard footer displays the version.
 
@@ -42,3 +42,9 @@ To disable only this addition:
 systemctl --user disable --now ghostpoint-hud-https ghostpoint-hud-web ghostpoint-hud-media
 ```
 This leaves all original demos untouched. Runtime credentials and backups remain in the release until explicitly removed. Rotating publishing/viewer passwords requires updating the private credentials JSON and MediaMTX config together, then restarting only the HUD media/web units; never paste the passwords into the frontend build.
+
+## Two-phone update (1.3.0)
+
+The supplied two-phone-server.patch was applied with git apply. The proxy permits exactly hud and hud2 with WHIP/WHEP session routes. The existing MediaMTX config is backed up and extended with hud2 plus scoped publish/read permissions, rather than rerunning the fresh installer. Recording and publisher takeover remain disabled for both paths. Only the HUD media/web services restart; the HTTPS tunnel and unrelated demos remain unchanged.
+
+Run `python hud-demo/test_serve.py` and `npm run build`. `two-phone-smoke.cjs` uses the same environment variables as smoke.cjs and verifies simultaneous distinct publishers, both full portrait frames, stopping one publisher while the other continues, and resource cleanup. Native stream-name support was inspected at uwbhud commit 4768c24 on branch iphone-hud-broadcast. Physical iPhone capture and restrictive-network TURN checks remain outstanding.
