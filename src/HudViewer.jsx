@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {openStream} from './stream';
+import {appVersion, buildCommit} from './version';
 import './hud-viewer.css';
 
 // Separate entry mode: existing demo settings and camera publishing are untouched.
@@ -29,6 +30,7 @@ export default function HudViewer() {
   return <main className="hud-viewer">
     <h1>Ghostpoint · iPhone HUD</h1>
     <p>Rendered iPhone screen · video only</p>
+    <p aria-label="Application version">v{appVersion} · {buildCommit}</p>
     <video ref={video} autoPlay playsInline muted aria-label="Complete iPhone HUD broadcast" />
     <button className="button primary" onClick={() => {setWatching(!watching);setState('idle');}}>
       {watching ? 'Stop viewing' : 'Watch broadcast'}

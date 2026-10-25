@@ -1,5 +1,7 @@
 # Isolated iPhone HUD deployment
 
+Versioned updates use a separate `releases/hud-<version>-<commit>` directory for `dist/` and `hud-demo/`. Only `ghostpoint-hud-web.service` moves to the new code; MediaMTX, the existing credentials/runtime, and the HTTPS tunnel keep running. Before switching, the previous web unit and `current-hud-release.txt` are saved under the original runtime's `backup/` directory. The authenticated `/version.json` endpoint records the deployed package version, commit and UTC build timestamp. The HUD viewer displays the version/commit, and the dashboard footer displays the version.
+
 This adds a `?hud=1` viewer mode to the existing frontend, reusing its `openStream` WHEP receiver. The normal dashboard, webcam demo and shared-room demo remain available. HUD video uses `object-fit: contain` to keep the entire portrait screen visible.
 
 ## Installed on 2026-10-25

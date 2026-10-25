@@ -26,6 +26,11 @@ class Handler(SimpleHTTPRequestHandler):
     def list_directory(self, _path):
         self.send_error(404)
 
+    def end_headers(self):
+        if urlsplit(self.path).path in ('/', '/index.html', '/version.json'):
+            self.send_header('Cache-Control', 'no-store')
+        super().end_headers()
+
     def authenticated(self, role):
         expected = self.server.credentials[role]
         if hmac.compare_digest(self.headers.get('Authorization', ''), expected):
