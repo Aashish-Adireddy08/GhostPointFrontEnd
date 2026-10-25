@@ -1,5 +1,10 @@
 # Changes
 
+## 1.4.1 — 2026-10-25
+
+- Fix token generation when running the proxy as a standalone service.
+- Send explicit JSON bodies for phone assignment requests through the HTTPS tunnel.
+
 ## 1.4.0 — 2026-10-25
 
 - Add hud3/hud4 with independent MediaMTX paths and publish/read permissions.

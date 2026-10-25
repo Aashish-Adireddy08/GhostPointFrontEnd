@@ -1,5 +1,5 @@
 diff --git a/modules/uwb-ar/BroadcastControls.tsx b/modules/uwb-ar/BroadcastControls.tsx
-index a2a7b44..f6aa1db 100644
+index a2a7b44..e76ca54 100644
 --- a/modules/uwb-ar/BroadcastControls.tsx
 +++ b/modules/uwb-ar/BroadcastControls.tsx
 @@ -1,43 +1,78 @@
@@ -60,7 +60,7 @@ index a2a7b44..f6aa1db 100644
 +        const controller = new AbortController();request.current = controller;
 +        const deadline = setTimeout(() => controller.abort(), 15000);
 +        let response: Response;
-+        try { response = await fetch(SERVER + '/broadcast/claim', { method: 'POST', signal: controller.signal }); }
++        try { response = await fetch(SERVER + '/broadcast/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', signal: controller.signal }); }
 +        finally { clearTimeout(deadline);request.current = null; }
 +        const assignment = await response.json();
 +        if (!response.ok) throw new Error(assignment.error || 'Could not assign a phone slot.');

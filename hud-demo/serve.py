@@ -169,5 +169,5 @@ if __name__ == '__main__':
     parser.add_argument('--secrets', required=True)
     args = parser.parse_args()
     with open(args.secrets, encoding='utf-8') as file:
-        secrets = json.load(file)
-    make_server(args.directory, secrets).serve_forever()
+        runtime_secrets = json.load(file)
+    make_server(args.directory, runtime_secrets).serve_forever()

@@ -15,11 +15,11 @@ async function main() {
     await page.evaluate(async () => {
       window.publishers = [];
       const assignments = await Promise.all([0,1,2,3].map(async () => {
-        const response = await fetch('/broadcast/claim', {method:'POST'});
-        if(!response.ok)throw Error('Slot assignment failed');return response.json();
+        const response = await fetch('/broadcast/claim', {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+        if(!response.ok)throw Error('Slot assignment HTTP '+response.status+': '+await response.text());return response.json();
       }));
       if(new Set(assignments.map(a=>a.stream)).size!==4)throw Error('Assignments collided');
-      if((await fetch('/broadcast/claim',{method:'POST'})).status!==409)throw Error('Fifth phone must be rejected');
+      if((await fetch('/broadcast/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status!==409)throw Error('Fifth phone must be rejected');
       window.assignments=assignments;
       for (const [index, name] of ['hud', 'hud2', 'hud3', 'hud4'].entries()) {
         const canvas = document.createElement('canvas');canvas.width = 390;canvas.height = 844;

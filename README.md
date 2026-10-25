@@ -2,7 +2,7 @@
 
 ## iPhone HUD broadcast
 
-Current release: **1.4.0**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
+Current release: **1.4.1**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
 
 Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
 
