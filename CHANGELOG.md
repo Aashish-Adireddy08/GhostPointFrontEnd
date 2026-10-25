@@ -1,5 +1,13 @@
 # Changes
 
+## 1.6.0 — 2026-10-25
+
+- Improve the native waypoint picker with explicit horizontal/vertical plane detection, supported LiDAR mesh reconstruction, multiple raycast targets and a nearby visual-feature fallback.
+- Add explicit distance placement for undetected surfaces, with estimated-placement labels and persistent failure feedback.
+- Add optional shared waypoint names, rename controls on phone/dashboard, and a dedicated selected-phone Clear waypoint button after placement.
+- Enforce name validation and phone clear/rename permission on the server; preserve the one-waypoint limit.
+- Ship both an incremental waypoint-improvements patch and the updated full shared-waypoint patch. Native compilation and physical surface testing remain unverified.
+
 ## 1.5.0 — 2026-10-25
 
 - Add dashboard selection of the one phone permitted to place a shared waypoint, plus revoke and clear controls.

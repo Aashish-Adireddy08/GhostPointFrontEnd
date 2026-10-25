@@ -6,5 +6,8 @@
 .waypoint-panel p{font-size:11px;color:#b9aa8b;line-height:1.6}
 .waypoint-state{display:flex;align-items:center;gap:10px;padding:14px 0;color:#8c8066}
 .waypoint-state.set{color:#ffc65c}.waypoint-state>span{font-size:32px}
+.waypoint-name{display:block;font-size:14px;margin-top:7px;overflow-wrap:anywhere}
+.waypoint-panel input{width:100%;padding:9px;background:#171811;border:1px solid #866729;border-radius:4px;color:#fff1d0;margin-bottom:8px;font-size:12px}
+.waypoint-panel form{margin-bottom:12px}
 .waypoint-state strong{display:block;font-size:10px;letter-spacing:1px}.waypoint-state small{display:block;font-size:10px;margin-top:5px}
 @media(max-width:760px){.hud-mode .details{display:block}.hud-mode .details>.section-title,.hud-mode .details>.details-card,.hud-mode .activity-heading,.hud-mode .event-list,.hud-mode .prototype{display:none}}

@@ -1,5 +1,26 @@
 # One shared waypoint, one authorized phone
 
+## Updated selection, clear and names (1.6.0)
+
+**Already installed the original waypoint patch?** Apply only `waypoint-improvements.patch` to that app source, then rebuild/install. **No waypoint code yet?** Apply the updated `shared-waypoint.patch` after `auto-four-streams.patch`. Do not apply both waypoint patches to the same source. Preserve work and run `git apply --check` first. The incremental patch targets the previous shared-waypoint source and changes four files: WaypointControls.tsx, WaypointOverlay.swift, UwbArModule.swift, UwbArView.swift.
+
+```sh
+# For an app that already has the original waypoint feature:
+git apply --check /path/to/GhostPointFrontEnd/iphone-hud/waypoint-improvements.patch
+git apply /path/to/GhostPointFrontEnd/iphone-hud/waypoint-improvements.patch
+npx tsc --noEmit
+npx expo lint
+npx expo run:ios --device
+```
+
+The new native build explicitly enables horizontal/vertical plane detection and mesh reconstruction on supported LiDAR devices. Surface selection tries detected plane geometry, estimated surfaces and extended detected planes around the tap. If no plane is found, a nearby visible AR feature within 18 screen points can provide an **estimated** point. Failures retain the old waypoint and leave placement armed, with readable feedback. Featureless, reflective and poorly lit surfaces can still fail.
+
+For those cases select **Distance**, enter **0.2–15 metres**, tap Place/Replace, then tap a direction. This is an explicit estimated 3D placement along the camera ray, not a detected surface. It is labeled as distance-based on the phone and website. There is no silent arbitrary-distance fallback.
+
+The selected phone has a **Waypoint name** field (optional, up to 40 characters), **Save name**, and a dedicated **Clear waypoint** button whenever a point exists. Names are shared with other phones and shown on the amber marker and website. The website also provides Rename waypoint and Clear waypoint. Phone clear/rename requests require the currently selected phone session; the existing public test dashboard retains its operator controls. Blank names default to Waypoint. Stop/clear cancels armed placement.
+
+Native TypeScript/lint and server name/clear-permission tests pass. Actual raycasts, mesh behavior, fallback accuracy, native compilation and touch/UI behavior still require Xcode and physical-device validation. New phone code is required for improved selection, on-phone clear, and on-phone naming; the website/server update alone cannot change ARKit detection.
+
 Apply **shared-waypoint.patch after auto-four-streams.patch** on uwbhud's `iphone-hud-broadcast` branch (base 4768c24). These are source patches, not app updates delivered to an installed iPhone. Preserve local changes and check before applying:
 
 ```sh

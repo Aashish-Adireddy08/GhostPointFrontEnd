@@ -2,7 +2,7 @@
 
 ## iPhone HUD broadcast
 
-Current release: **1.5.0**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
+Current release: **1.6.0**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
 
 Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
 
@@ -83,3 +83,9 @@ Run `python hud-demo/test_serve.py`, existing media tests, and `npm run build`. 
 In the amber Shared waypoint dashboard panel, choose the one phone allowed to place. That phone taps Place waypoint, then taps a visible surface. One world-space waypoint is shared; setting another replaces it. Choose Nobody to revoke placement or Clear waypoint to remove the point. Native waypoints use an amber diamond/orange marker, distinct from green phone markers. Other phones wait for valid AR alignment instead of showing a guessed location.
 
 **A new native patch/rebuild is required on every participating phone:** apply [shared-waypoint.patch](iphone-hud/shared-waypoint.patch) after the automatic-four-stream patch; see [SHARED-WAYPOINT.md](iphone-hud/SHARED-WAYPOINT.md) for installation and physical device acceptance checks. Existing broadcasting still works without the update. Grants/waypoints are session-scoped and kept in memory, not a location history. The existing public dashboard controls grants without adding a login.
+
+## Improved waypoint selection and names (1.6.0)
+
+New phone source enables plane detection and supported LiDAR mesh reconstruction, tries multiple surface targets and nearby AR features, and offers an explicit Distance placement mode when a real surface cannot be detected. Estimated placements are labeled. The selected phone can name/rename a waypoint and has a dedicated Clear waypoint button after placing it; the website displays the name and can rename it too. The one-point and one-authorized-phone rules remain.
+
+Existing waypoint users should apply [waypoint-improvements.patch](iphone-hud/waypoint-improvements.patch), then rebuild/install. First-time waypoint installs use the updated shared-waypoint.patch instead. See [SHARED-WAYPOINT.md](iphone-hud/SHARED-WAYPOINT.md). Do not apply both. Xcode compilation and real surface/gesture behavior require physical-device tests; server/browser tests cannot prove surface detection.

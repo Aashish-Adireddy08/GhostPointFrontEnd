@@ -5,6 +5,7 @@ const label = stream => `Phone ${['hud','hud2','hud3','hud4'].indexOf(stream)+1}
 export default function WaypointPanel() {
   const [room,setRoom]=useState({phones:[],holder:null,point:null});
   const [error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const [name,setName]=useState('');
   useEffect(()=>{
     const controller=new AbortController();let timer;
     const poll=async()=>{try{const response=await fetch('/waypoint',{signal:controller.signal,cache:'no-store'});if(!response.ok)throw Error('Waypoint service unavailable');const state=await response.json();if(!controller.signal.aborted)setRoom(state);}catch(e){if(!controller.signal.aborted)setError(e.message);}finally{if(!controller.signal.aborted)timer=setTimeout(poll,1000);}};
@@ -22,7 +23,12 @@ export default function WaypointPanel() {
       {room.phones.map(phone=><option key={phone.stream} value={phone.stream}>{label(phone.stream)}</option>)}
     </select>
     <p>{room.holder?`${label(room.holder)} can tap Place waypoint in the app, then tap a surface. New placement replaces the previous point.`:'Choose one updated phone to enable waypoint placement.'}</p>
-    <div className={'waypoint-state '+(room.point?'set':'')}><span>◆</span><div><strong>{room.point?'WAYPOINT ACTIVE':'NO WAYPOINT'}</strong><small>{room.point?`Set by ${label(room.point.stream)}`:'One shared point for the team'}</small></div></div>
+    <div className={'waypoint-state '+(room.point?'set':'')}><span>◆</span><div><strong>{room.point?'WAYPOINT ACTIVE':'NO WAYPOINT'}</strong>{room.point&&<b className="waypoint-name">{room.point.name||'Waypoint'}</b>}<small>{room.point?`Set by ${label(room.point.stream)}`:'One shared point for the team'}</small>{room.point?.placement&&room.point.placement!=='surface'&&<small>{room.point.placement==='distance'?'Estimated distance placement':'Estimated visual feature'}</small>}</div></div>
+    {room.point&&<form onSubmit={e=>{e.preventDefault();void command('rename',{name});setName('');}}>
+      <label htmlFor="waypoint-name">Rename waypoint</label>
+      <input id="waypoint-name" maxLength={40} value={name} placeholder={room.point.name||'Waypoint'} onChange={e=>setName(e.target.value)} />
+      <button className="button full" disabled={busy||!name.trim()} type="submit">Save name</button>
+    </form>}
     <button className="button full" disabled={busy||!room.point} onClick={()=>command('clear',{})}>Clear waypoint</button>
     {!room.phones.length&&<p>Phones appear after installing the waypoint update and connecting.</p>}
     {error&&<p role="alert" className="error">{error}</p>}

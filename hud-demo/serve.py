@@ -70,7 +70,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
-        if self.path in ('/waypoint/grant', '/waypoint/clear', '/waypoint/phone', '/waypoint/set'):
+        if self.path in ('/waypoint/grant', '/waypoint/clear', '/waypoint/rename', '/waypoint/phone', '/waypoint/set'):
             try:
                 size = int(self.headers.get('Content-Length', '0'))
                 if self.headers.get('Transfer-Encoding') or not 0 < size <= 2048:

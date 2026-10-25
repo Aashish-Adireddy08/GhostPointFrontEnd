@@ -60,6 +60,32 @@ class WaypointTests(unittest.TestCase):
         self.assertIsNone(state['holder'])
         self.assertIsNone(state['point'])
 
+    def test_names_placement_metadata_and_rename(self):
+        self.room.command('grant', {'stream': 'hud'})
+        status, state = self.room.command('set', {'device': 'phone-a', 'reference': self.ref, 'name': '  Loading   bay  ', 'placement': 'feature'})
+        self.assertEqual(status, 200)
+        self.assertEqual(state['point']['name'], 'Loading bay')
+        self.assertEqual(state['point']['placement'], 'feature')
+        original_id = state['point']['id']
+        status, state = self.room.command('rename', {'device': 'phone-a', 'name': 'Exit A'})
+        self.assertEqual(status, 200)
+        self.assertEqual(state['point']['name'], 'Exit A')
+        self.assertEqual(state['point']['id'], original_id)
+        for name in ('x' * 41, 'bad\x00name', 123):
+            self.assertEqual(self.room.command('rename', {'name': name})[0], 400)
+        self.assertEqual(self.room.command('set', {'device': 'phone-a', 'reference': self.ref, 'placement': 'unknown'})[0], 400)
+
+    def test_phone_clear_and_rename_require_selected_session(self):
+        self.room.command('grant', {'stream': 'hud'})
+        self.place()
+        self.assertEqual(self.room.command('clear', {'device': 'phone-b'})[0], 403)
+        self.assertEqual(self.room.command('rename', {'device': 'phone-b', 'name': 'Wrong phone'})[0], 403)
+        self.assertIsNotNone(self.room.public()['point'])
+        status, state = self.room.command('clear', {'device': 'phone-a'})
+        self.assertEqual(status, 200)
+        self.assertIsNone(state['point'])
+        self.assertEqual(self.room.command('rename', {'device': 'phone-a', 'name': 'Gone'})[0], 409)
+
 
 if __name__ == '__main__':
     unittest.main()

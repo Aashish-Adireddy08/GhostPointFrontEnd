@@ -6,6 +6,15 @@ import time
 
 
 class WaypointRoom:
+    @staticmethod
+    def clean_name(value):
+        if not isinstance(value, str):
+            return None
+        value = ' '.join(value.split()) or 'Waypoint'
+        if len(value) > 40 or any(ord(c) < 32 or ord(c) == 127 for c in value):
+            return None
+        return value
+
     def __init__(self):
         self.lock = threading.RLock()
         self.phones = {}
@@ -52,7 +61,21 @@ class WaypointRoom:
                     return 409, {'error': 'This phone needs the waypoint app update and an active session.'}
                 self.holder = token
                 self.revision += 1
-            elif action == 'clear':
+            elif action in ('clear', 'rename'):
+                if 'device' in payload:
+                    token = payload['device']
+                    if not isinstance(token, str) or token not in self.phones or token != self.holder:
+                        return 403, {'error': 'Only the selected phone can change the waypoint.'}
+                    self.phones[token]['seen'] = time.monotonic()
+                if action == 'rename':
+                    name = self.clean_name(payload.get('name', ''))
+                    if name is None:
+                        return 400, {'error': 'Use a waypoint name of at most 40 characters.'}
+                    if not self.point:
+                        return 409, {'error': 'Place a waypoint before renaming it.'}
+                    self.point['name'] = name
+                    self.revision += 1
+                    return 200, self.public()
                 self.point = None
                 self.revision += 1
             else:
@@ -63,6 +86,10 @@ class WaypointRoom:
                 if action == 'set':
                     if token != self.holder:
                         return 403, {'error': 'Only the phone selected in the dashboard can set the waypoint.'}
+                    name = self.clean_name(payload.get('name', ''))
+                    placement = payload.get('placement', 'surface')
+                    if name is None or placement not in ('surface', 'feature', 'distance'):
+                        return 400, {'error': 'Use a name of at most 40 characters and a valid placement mode.'}
                     ref = payload.get('reference', {})
                     position = ref.get('position') if isinstance(ref, dict) else None
                     if (not isinstance(position, list) or len(position) != 3 or
@@ -72,6 +99,7 @@ class WaypointRoom:
                         return 400, {'error': 'Invalid AR waypoint coordinates.'}
                     self.revision += 1
                     self.point = {'id': secrets.token_hex(8), 'creator': token, 'stream': self.phones[token]['stream'],
+                                  'name': name, 'placement': placement,
                                   'reference': {'peer': ref['peer'], 'epoch': ref['epoch'], 'position': position}}
                 state = self.public()
                 state['canPlace'] = token == self.holder

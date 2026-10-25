@@ -24,10 +24,15 @@ async function main(){
     await page.waitForFunction(()=>document.querySelector('.waypoint-panel').textContent.includes('can tap Place waypoint'));
     const reference={peer:'SMOKE-TEST-NOT-A-PHYSICAL-POINT',epoch:123,position:[1,0,-2]};
     assert.equal((await post('/waypoint/set',{device:b.lease,reference})).status(),403);
-    const first=await post('/waypoint/set',{device:a.lease,reference});assert.equal(first.status(),200);
+    const first=await post('/waypoint/set',{device:a.lease,reference,name:'Loading bay',placement:'feature'});assert.equal(first.status(),200);
     const firstID=(await first.json()).point.id;
     await page.getByText('WAYPOINT ACTIVE',{exact:true}).waitFor();
-    const second=await post('/waypoint/set',{device:a.lease,reference:{...reference,position:[2,0,-3]}});
+    await page.getByText('Loading bay',{exact:true}).waitFor();
+    await page.getByLabel('Rename waypoint').fill('Exit A');
+    await page.getByRole('button',{name:'Save name',exact:true}).click();
+    await page.getByText('Exit A',{exact:true}).waitFor();
+    assert.equal((await post('/waypoint/clear',{device:b.lease})).status(),403);
+    const second=await post('/waypoint/set',{device:a.lease,reference:{...reference,position:[2,0,-3]},name:'Exit A',placement:'distance'});
     assert.equal(second.status(),200);assert.notEqual((await second.json()).point.id,firstID);
     if(process.env.HUD_SCREENSHOT)await page.screenshot({path:process.env.HUD_SCREENSHOT,fullPage:true});
     await page.getByLabel('Phone allowed to place').selectOption(b.stream);
@@ -36,12 +41,16 @@ async function main(){
     await page.waitForFunction(()=>!document.querySelector('#waypoint-owner').disabled);
     assert.equal((await post('/waypoint/set',{device:a.lease,reference})).status(),403);
     assert.equal((await post('/waypoint/set',{device:b.lease,reference})).status(),200);
+    assert.equal((await post('/waypoint/clear',{device:b.lease})).status(),200);
+    await page.getByText('NO WAYPOINT',{exact:true}).waitFor();
+    assert.equal((await post('/waypoint/set',{device:b.lease,reference,name:'Exit B'})).status(),200);
+    await page.getByText('Exit B',{exact:true}).waitFor();
     await page.getByRole('button',{name:'Clear waypoint',exact:true}).click();
     await page.getByText('NO WAYPOINT',{exact:true}).waitFor();
     await page.getByLabel('Phone allowed to place').selectOption('');
     await page.waitForFunction(()=>!document.querySelector('#waypoint-owner').disabled);
     assert.equal((await post('/waypoint/set',{device:b.lease,reference})).status(),403);
-    console.log(JSON.stringify({waypointDashboard:'passed',permissionEnforcement:'passed',singlePointReplacement:'passed',transferRevokeClear:'passed',nativeAR:'not tested'}));
+    console.log(JSON.stringify({waypointDashboard:'passed',namingAndRename:'passed',phoneClearPermission:'passed',permissionEnforcement:'passed',singlePointReplacement:'passed',transferRevokeClear:'passed',nativeAR:'not tested'}));
   }finally{
     if(changed){await post('/waypoint/clear',{});await post('/waypoint/grant',{stream:null});}
     for(const session of sessions)await post('/broadcast/release',{lease:session.lease});

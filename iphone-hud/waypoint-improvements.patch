@@ -1,0 +1,312 @@
+diff --git a/modules/uwb-ar/WaypointControls.tsx b/modules/uwb-ar/WaypointControls.tsx
+index 49c1394..f8f1bea 100644
+--- a/modules/uwb-ar/WaypointControls.tsx
++++ b/modules/uwb-ar/WaypointControls.tsx
+@@ -1,16 +1,27 @@
+-import { useEffect, useState } from 'react';
+-import { Button, StyleSheet, Text, View } from 'react-native';
++import { useEffect, useRef, useState } from 'react';
++import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+ import { requireNativeModule } from 'expo';
+ 
+ const native = requireNativeModule('UwbAr');
++type Room = { revision?: number; canPlace?: boolean; point: { id: string; name?: string; placement?: string; reference: object } | null };
+ export function WaypointControls({ server, device }: { server: string; device: string }) {
+   const [allowed, setAllowed] = useState(false);
+   const [message, setMessage] = useState('Waiting for waypoint permission…');
+   const [hasPoint, setHasPoint] = useState(false);
++  const [name, setName] = useState('');
++  const nameRef = useRef('');
++  const pointID = useRef<string | null>(null);
++  const previousName = useRef('Waypoint');
++  const [mode, setMode] = useState<'surface' | 'distance'>('surface');
++  const [distance, setDistance] = useState('2');
++  const [busy, setBusy] = useState(false);
++  const mutate = useRef<((action: string) => void) | null>(null);
+   useEffect(() => {
+     const controller = new AbortController();
+     let timer: ReturnType<typeof setTimeout>;
+     let currentPermission = false;
++    let revision = -1;
++    let lastPrompt = '';
+     const post = async (action: string, payload: object) => {
+       const response = await fetch(server + '/waypoint/' + action, {
+         method: 'POST', headers: { 'Content-Type': 'application/json' },
+@@ -18,16 +29,28 @@ export function WaypointControls({ server, device }: { server: string; device: s
+       });
+       const state = await response.json();
+       if (!response.ok) throw new Error(state.error || 'Waypoint request failed');
+-      return state;
++      return state as Room;
++    };
++    const apply = async (state: Room) => {
++      if (controller.signal.aborted || (state.revision ?? 0) < revision) return;
++      revision = state.revision ?? revision;
++      currentPermission = state.canPlace ?? currentPermission;
++      setAllowed(currentPermission);setHasPoint(Boolean(state.point));
++      const newName = state.point?.name || 'Waypoint';
++      if (state.point && (pointID.current !== state.point.id || nameRef.current === previousName.current)) {
++        nameRef.current = newName;setName(newName);
++      }
++      pointID.current = state.point?.id ?? null;previousName.current = newName;
++      const reference = state.point ? { ...state.point.reference, name: newName, placement: state.point.placement || 'surface' } : null;
++      await native.updateWaypoint(reference, currentPermission);
+     };
+     const poll = async () => {
+       try {
+         const state = await post('phone', {});
+-        if (controller.signal.aborted) return;
+-        currentPermission = state.canPlace;
+-        setAllowed(state.canPlace);setHasPoint(Boolean(state.point));
+-        await native.updateWaypoint(state.point?.reference ?? null, state.canPlace);
+-        if (!state.point) setMessage(state.canPlace ? 'You can place the team waypoint.' : 'Choose a phone in the website waypoint controls.');
++        await apply(state);
++        const prompt = `${currentPermission}:${Boolean(state.point)}`;
++        if (!controller.signal.aborted && !state.point && prompt !== lastPrompt) setMessage(currentPermission ? 'Name the waypoint, choose placement, then tap Place.' : 'Choose a phone in the website waypoint controls.');
++        lastPrompt = prompt;
+       } catch (error) {
+         if (!controller.signal.aborted) {
+           currentPermission = false;setAllowed(false);
+@@ -36,31 +59,62 @@ export function WaypointControls({ server, device }: { server: string; device: s
+         }
+       } finally { if (!controller.signal.aborted) timer = setTimeout(poll, 1000); }
+     };
+-    const tap = native.addListener('onWaypointTap', (event: { reference: object }) => {
++    mutate.current = action => {
+       if (!currentPermission) return;
+-      void post('set', { reference: event.reference }).then(state => {
+-        if (!controller.signal.aborted) {
+-          void native.updateWaypoint(state.point?.reference ?? null, state.canPlace);
+-          setHasPoint(Boolean(state.point));setMessage('Waypoint shared with the team.');
+-        }
+-      }).catch(error => { if (!controller.signal.aborted) setMessage(error.message); });
++      setBusy(true);
++      void native.cancelWaypoint();
++      void post(action, { name: nameRef.current }).then(async state => {
++        await apply(state);
++        if (!controller.signal.aborted) setMessage(action === 'clear' ? 'Waypoint cleared for everyone.' : 'Waypoint name saved.');
++      }).catch(error => { if (!controller.signal.aborted) setMessage(error.message); })
++        .finally(() => { if (!controller.signal.aborted) setBusy(false); });
++    };
++    const tap = native.addListener('onWaypointTap', (event: { reference: object; placement?: string }) => {
++      if (!currentPermission) return;
++      setBusy(true);
++      void post('set', { reference: event.reference, name: nameRef.current, placement: event.placement || 'surface' }).then(async state => {
++        await apply(state);
++        if (!controller.signal.aborted) setMessage('Waypoint shared with the team.');
++      }).catch(error => { if (!controller.signal.aborted) setMessage(error.message); })
++        .finally(() => { if (!controller.signal.aborted) setBusy(false); });
+     });
+     const status = native.addListener('onWaypointStatus', (event: { message: string }) => {
+       if (!controller.signal.aborted) setMessage(event.message);
+     });
+     void poll();
+-    return () => {controller.abort();clearTimeout(timer);tap.remove();status.remove();void native.updateWaypoint(null, false);};
++    return () => {controller.abort();clearTimeout(timer);mutate.current = null;tap.remove();status.remove();void native.updateWaypoint(null, false);};
+   }, [server, device]);
+   return <View style={styles.panel}>
+     <Text style={styles.title}>◆ TEAM WAYPOINT</Text>
+     <Text style={styles.text}>{message}</Text>
+-    {allowed && <Button color="#ffbd42" title={hasPoint ? 'Replace waypoint' : 'Place waypoint'} onPress={() => {
+-      void native.armWaypoint();setMessage('Tap a visible floor or wall in the camera view.');
+-    }} />}
++    {allowed && <>
++      <TextInput style={styles.input} placeholder="Waypoint name (optional)" placeholderTextColor="#bba577" value={name} maxLength={40}
++        onChangeText={value => { nameRef.current = value;setName(value); }} accessibilityLabel="Waypoint name" />
++      <View style={styles.row}>
++        <Button color={mode === 'surface' ? '#ffbd42' : '#aaa'} title="Surface" onPress={() => {setMode('surface');void native.cancelWaypoint();}} />
++        <Button color={mode === 'distance' ? '#ffbd42' : '#aaa'} title="Distance" onPress={() => {setMode('distance');void native.cancelWaypoint();}} />
++        {hasPoint && <Button title="Save name" disabled={busy} onPress={() => mutate.current?.('rename')} />}
++      </View>
++      {mode === 'distance' && <>
++        <Text style={styles.text}>Estimated placement: choose 0.2–15 metres, then tap a direction.</Text>
++        <TextInput style={styles.input} value={distance} onChangeText={setDistance} keyboardType="decimal-pad" maxLength={5} accessibilityLabel="Waypoint distance in metres" />
++      </>}
++      <View style={styles.row}>
++        <Button color="#ffbd42" disabled={busy} title={hasPoint ? 'Replace waypoint' : 'Place waypoint'} onPress={() => {
++          const metres = Number(distance.replace(',', '.'));
++          if (mode === 'distance' && (!Number.isFinite(metres) || metres < 0.2 || metres > 15)) {setMessage('Enter a distance between 0.2 and 15 metres.');return;}
++          void native.armWaypoint(mode === 'distance' ? metres : null);
++          setMessage(mode === 'distance' ? 'Tap a direction for the estimated distance placement.' : 'Tap a floor, wall or object. Scan slowly if needed.');
++        }} />
++        {hasPoint && <Button color="#ffbd42" disabled={busy} title="Clear waypoint" onPress={() => mutate.current?.('clear')} />}
++      </View>
++    </>}
+   </View>;
+ }
+ const styles = StyleSheet.create({
+   panel: { borderWidth: 1, borderColor: '#ffbd42', borderRadius: 3, padding: 5, marginTop: 4, backgroundColor: '#211b10' },
+   title: { color: '#ffbd42', fontWeight: 'bold', fontSize: 12, textAlign: 'center' },
+   text: { color: '#ffe4aa', fontSize: 11, textAlign: 'center' },
++  input: { color: '#ffe4aa', borderBottomWidth: 1, borderColor: '#866729', padding: 5, fontSize: 12 },
++  row: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' },
+ });
+diff --git a/modules/uwb-ar/ios/UwbArModule.swift b/modules/uwb-ar/ios/UwbArModule.swift
+index 4623bea..67286a3 100644
+--- a/modules/uwb-ar/ios/UwbArModule.swift
++++ b/modules/uwb-ar/ios/UwbArModule.swift
+@@ -23,9 +23,13 @@ public class UwbArModule: Module {
+             WaypointBridge.canPlace = allowed
+             if !allowed { WaypointBridge.armed = false }
+         }.runOnQueue(.main)
+-        AsyncFunction("armWaypoint") {
++        AsyncFunction("armWaypoint") { (distance: Double?) in
++            WaypointBridge.placementDistance = distance.flatMap { $0.isFinite && (0.2...15).contains($0) ? Float($0) : nil }
+             WaypointBridge.armed = WaypointBridge.canPlace
+         }.runOnQueue(.main)
++        AsyncFunction("cancelWaypoint") {
++            WaypointBridge.armed = false
++        }.runOnQueue(.main)
+         AsyncFunction("startBroadcast") { (url: String, password: String) in
+             try self.broadcast.start(endpoint: url, password: password)
+         }.runOnQueue(.main)
+diff --git a/modules/uwb-ar/ios/UwbArView.swift b/modules/uwb-ar/ios/UwbArView.swift
+index d37dde4..b5f6003 100644
+--- a/modules/uwb-ar/ios/UwbArView.swift
++++ b/modules/uwb-ar/ios/UwbArView.swift
+@@ -71,6 +71,10 @@ final class UwbArView: ExpoView {
+         let config = ARWorldTrackingConfiguration()
+         config.worldAlignment = .gravity
+         config.isCollaborationEnabled = false
++        config.planeDetection = [.horizontal, .vertical]
++        if ARWorldTrackingConfiguration.supportsSceneReconstruction(.mesh) {
++            config.sceneReconstruction = .mesh
++        }
+         arView.session.run(config)
+         startTracker()
+         updateSub = arView.scene.subscribe(to: SceneEvents.Update.self) { [weak self] _ in self?.tick() }
+diff --git a/modules/uwb-ar/ios/WaypointOverlay.swift b/modules/uwb-ar/ios/WaypointOverlay.swift
+index 2ec8750..c228d03 100644
+--- a/modules/uwb-ar/ios/WaypointOverlay.swift
++++ b/modules/uwb-ar/ios/WaypointOverlay.swift
+@@ -7,6 +7,7 @@ enum WaypointBridge {
+     static var reference: [String: Any]?
+     static var canPlace = false
+     static var armed = false
++    static var placementDistance: Float?
+     static var onEvent: ((String, [String: Any]) -> Void)?
+ }
+ 
+@@ -18,6 +19,7 @@ final class WaypointOverlay: NSObject {
+     private let label = UILabel()
+     private var gesture: UITapGestureRecognizer?
+     private var lastStatus = ""
++    private var statusUntil: TimeInterval = 0
+ 
+     init(arView: ARView, tracker: UWBTracker, container: UIView) {
+         self.arView = arView
+@@ -27,9 +29,11 @@ final class WaypointOverlay: NSObject {
+         marker.isEnabled = false
+         root.addChild(marker)
+         arView.scene.addAnchor(root)
+-        label.bounds = CGRect(x: 0, y: 0, width: 190, height: 58)
+-        label.numberOfLines = 2
+-        label.font = .monospacedSystemFont(ofSize: 14, weight: .bold)
++        label.bounds = CGRect(x: 0, y: 0, width: 210, height: 72)
++        label.numberOfLines = 3
++        label.font = .monospacedSystemFont(ofSize: 12, weight: .bold)
++        label.adjustsFontSizeToFitWidth = true
++        label.minimumScaleFactor = 0.65
+         label.textColor = .systemOrange
+         label.textAlignment = .center
+         label.backgroundColor = UIColor(white: 0.08, alpha: 0.9)
+@@ -52,33 +56,68 @@ final class WaypointOverlay: NSObject {
+         WaypointBridge.armed = false
+     }
+ 
+-    private func status(_ text: String) {
++    private func status(_ text: String, hold: TimeInterval = 0) {
++        let now = CACurrentMediaTime()
++        if hold > 0 { statusUntil = now + hold }
++        else if now < statusUntil { return }
+         guard text != lastStatus else { return }
+         lastStatus = text
+         WaypointBridge.onEvent?("onWaypointStatus", ["message": text])
+     }
+ 
++    private func pick(_ screen: CGPoint, in view: ARView) -> (point: SIMD3<Float>, kind: String)? {
++        guard let frame = view.session.currentFrame, let ray = view.ray(through: screen) else { return nil }
++        if let distance = WaypointBridge.placementDistance {
++            return (ray.origin + simd_normalize(ray.direction) * distance, "distance")
++        }
++        let offsets = [CGPoint.zero, CGPoint(x: -10, y: 0), CGPoint(x: 10, y: 0), CGPoint(x: 0, y: -10), CGPoint(x: 0, y: 10)]
++        let targets: [ARRaycastQuery.Target] = [.existingPlaneGeometry, .estimatedPlane, .existingPlaneInfinite]
++        for target in targets {
++            for offset in offsets {
++                let tap = CGPoint(x: screen.x + offset.x, y: screen.y + offset.y)
++                for hit in view.raycast(from: tap, allowing: target, alignment: .any) {
++                    let t = hit.worldTransform.columns.3
++                    let point = SIMD3(t.x, t.y, t.z)
++                    if (0.15...15).contains(simd_distance(point, ray.origin)) { return (point, "surface") }
++                }
++            }
++        }
++        // A visible feature is an estimated point, not a claimed plane intersection.
++        var best: (point: SIMD3<Float>, score: CGFloat)?
++        for point in frame.rawFeaturePoints?.points ?? [] {
++            let distance = simd_distance(point, ray.origin)
++            guard (0.15...12).contains(distance), simd_dot(point - ray.origin, ray.direction) > 0,
++                  let projected = view.project(point) else { continue }
++            let pixels = hypot(projected.x - screen.x, projected.y - screen.y)
++            guard pixels <= 18 else { continue }
++            let score = pixels + CGFloat(distance) * 0.05
++            if best == nil || score < best!.score { best = (point, score) }
++        }
++        return best.map { ($0.point, "feature") }
++    }
++
+     @objc private func place(_ tap: UITapGestureRecognizer) {
+         guard WaypointBridge.canPlace, WaypointBridge.armed, let arView, let tracker else { return }
+-        guard let result = arView.raycast(from: tap.location(in: arView), allowing: .estimatedPlane, alignment: .any).first else {
+-            status("No surface found. Scan slowly, then tap a floor or wall.")
++        guard let result = pick(tap.location(in: arView), in: arView) else {
++            status("No surface found. Scan from another angle, or select Distance placement.", hold: 4)
+             return
+         }
+-        let p = result.worldTransform.columns.3
+-        guard let reference = tracker.waypointReference(SIMD3(p.x, p.y, p.z)) else {
+-            status("AR tracking is not ready. Move slowly and try again.")
++        guard let reference = tracker.waypointReference(result.point) else {
++            status("AR tracking is not ready. Move slowly and try again.", hold: 4)
+             return
+         }
+         WaypointBridge.armed = false
+-        WaypointBridge.onEvent?("onWaypointTap", ["reference": reference])
+-        status("Sending waypoint…")
++        WaypointBridge.onEvent?("onWaypointTap", ["reference": reference, "placement": result.kind])
++        status(result.kind == "surface" ? "Sending waypoint…" : "Sending estimated waypoint…", hold: 2)
+     }
+ 
+     func tick(camera: ARCamera) {
+         marker.isEnabled = false
+         label.isHidden = true
+         guard let arView, let tracker, let reference = WaypointBridge.reference else {
+-            if WaypointBridge.armed { status("Tap a visible surface to place the waypoint.") }
++            if WaypointBridge.armed {
++                status(WaypointBridge.placementDistance == nil ? "Tap a visible surface to place the waypoint." : "Tap a direction for the estimated distance placement.")
++            }
+             return
+         }
+         guard let peer = reference["peer"] as? String,
+@@ -95,15 +134,19 @@ final class WaypointOverlay: NSObject {
+         let distance = simd_distance(p, SIMD3(t.x, t.y, t.z))
+         let cam = camera.viewMatrix(for: .portrait) * SIMD4(p, 1)
+         let projected = arView.project(p)
++        let name = String((reference["name"] as? String ?? "Waypoint").prefix(40))
++        let kind = reference["placement"] as? String ?? "surface"
++        let suffix = kind == "surface" ? "" : kind == "distance" ? " · distance" : " · estimated"
+         let inside = cam.z < 0 && projected.map { arView.bounds.insetBy(dx: 100, dy: 130).contains($0) } == true
+         if inside, let projected {
+             label.center = CGPoint(x: projected.x, y: projected.y - 48)
+-            label.text = String(format: "◆ WAYPOINT\n%.1f m", distance)
++            label.text = String(format: "◆ WAYPOINT\n%@\n%.1f m%@", name, distance, suffix)
+         } else {
+             label.center = CGPoint(x: arView.bounds.midX, y: 160)
+-            label.text = String(format: "◆ WAYPOINT · OFF SCREEN\n%.1f m", distance)
++            label.text = String(format: "◆ WAYPOINT · OFF SCREEN\n%@\n%.1f m%@", name, distance, suffix)
+         }
+         label.isHidden = false
++        label.superview?.bringSubviewToFront(label)
+         status(WaypointBridge.armed ? "Tap a surface to replace the waypoint." : "Shared waypoint active.")
+     }
+ }
