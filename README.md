@@ -2,7 +2,7 @@
 
 ## iPhone HUD broadcast
 
-Current release: **1.3.0** (public testing, no login). The integrated command dashboard displays **Phone 1** (`hud`) and **Phone 2** (`hud2`) independently. Open `/?hud=1` to wait automatically, or click **Watch phone broadcasts** on `/`. Both portrait screens stay fully visible. The footer shows the version; `/version.json` records the full source commit and build time.
+Current release: **1.4.0**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
 
 Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
 
@@ -69,3 +69,11 @@ Both phones need the uwbhud `iphone-hud-broadcast` branch at commit `4768c24` or
 - Viewer: `https://parents-costumes-eco-threshold.trycloudflare.com/?hud=1`
 
 Tap Start Broadcast on each phone and keep the app foregrounded. Phone 1 and Phone 2 have separate dashboard players; either may start first. The temporary tunnel origin can change after a tunnel restart. No physical two-iPhone capture test was performed here.
+
+## Automatic phone setup (1.4.0)
+
+A **new incremental phone patch and rebuild are required** to remove URL entry: see [AUTO-FOUR-STREAMS.md](iphone-hud/AUTO-FOUR-STREAMS.md). It targets uwbhud branch iphone-hud-broadcast, commit 4768c24. The app connects to the built-in server when opened, then claims an available slot on Start Broadcast. Keep screen capture opt-in. Existing named-stream phone builds still work with manual paths hud through hud4.
+
+The allocator serializes simultaneous claims and reserves pending slots for 90 seconds. Active occupancy comes from the loopback-only MediaMTX API. Four busy slots produce a clear capacity error. Stop/error releases pending reservations. The temporary tunnel origin is built into the native patch; if it changes, update the origin and rebuild or use a permanent domain.
+
+Run `python hud-demo/test_serve.py`, existing media tests, and `npm run build`. `hud-demo/four-phone-smoke.cjs` checks four independent synthetic publishers, automatic assignments, fifth-phone rejection, panel counts 1/2/3/4, portrait edges, independent stop and cleanup. Native TypeScript/lint passes do not replace Xcode/iPhone capture tests.

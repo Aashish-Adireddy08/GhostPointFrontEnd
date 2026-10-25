@@ -32,7 +32,8 @@ rtmp: false
 hls: false
 srt: false
 moq: false
-api: false
+api: true
+apiAddress: 127.0.0.1:29997
 playback: false
 webrtc: true
 webrtcAddress: 127.0.0.1:28889
@@ -50,6 +51,10 @@ authInternalUsers:
         path: hud
       - action: publish
         path: hud2
+      - action: publish
+        path: hud3
+      - action: publish
+        path: hud4
   - user: hud-viewer
     pass: {credentials['view_password']}
     permissions:
@@ -57,12 +62,25 @@ authInternalUsers:
         path: hud
       - action: read
         path: hud2
+      - action: read
+        path: hud3
+      - action: read
+        path: hud4
+      - action: api
 paths:
   hud:
     source: publisher
     overridePublisher: false
     record: false
   hud2:
+    source: publisher
+    overridePublisher: false
+    record: false
+  hud3:
+    source: publisher
+    overridePublisher: false
+    record: false
+  hud4:
     source: publisher
     overridePublisher: false
     record: false

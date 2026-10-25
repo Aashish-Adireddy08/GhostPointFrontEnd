@@ -1,5 +1,13 @@
 # Changes
 
+## 1.4.0 — 2026-10-25
+
+- Add hud3/hud4 with independent MediaMTX paths and publish/read permissions.
+- Automatically discover live phones and adjust the dashboard from zero to four panels; live mode opens by default (`?hud=0` retains simulation entry).
+- Add atomic free-slot allocation, capacity errors, reservation expiry/release, and a loopback-only MediaMTX status API.
+- Include an incremental iPhone controls patch based on native commit 4768c24: built-in server, no pasted URL, automatic slot assignment on Start Broadcast. Capture remains opt-in.
+- Add allocator tests and a four-publisher end-to-end synthetic transport/layout test. Physical iPhone capture remains unverified.
+
 ## 1.3.0 — 2026-10-25
 
 - Apply the supplied two-phone server patch: permit `hud` and `hud2` WHIP/WHEP routes, session deletion, and MediaMTX publish/read permissions.

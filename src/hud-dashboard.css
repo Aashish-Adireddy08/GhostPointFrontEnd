@@ -1,2 +1,7 @@
 /* Reserve the command panel's label strip below the complete portrait HUD. */
 .hud-mode .viewport video { height: calc(100% - 30px); object-fit: contain; }
+
+.hud-mode .feeds { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hud-mode .feeds.single { grid-template-columns: 1fr; }
+.phone-waiting { padding: 60px 24px; text-align: center; border: 1px solid #354030; border-radius: 7px; color: #9aa795; }
+@media (max-width: 760px) { .hud-mode .feeds { grid-template-columns: 1fr; } }
