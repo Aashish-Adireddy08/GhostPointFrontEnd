@@ -2,7 +2,7 @@
 
 ## iPhone HUD broadcast
 
-Current release: **1.4.1**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
+Current release: **1.5.0**. Four independent paths (`hud`, `hud2`, `hud3`, `hud4`), no client login, automatic live discovery and adaptive dashboard layout. Opening the website starts viewing live phones automatically; `?hud=0` opens the older simulation. One phone gets a full-width panel; 2–4 use a two-column grid (one column on mobile). No empty phone panels are shown.
 
 Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
 
@@ -77,3 +77,9 @@ A **new incremental phone patch and rebuild are required** to remove URL entry: 
 The allocator serializes simultaneous claims and reserves pending slots for 90 seconds. Active occupancy comes from the loopback-only MediaMTX API. Four busy slots produce a clear capacity error. Stop/error releases pending reservations. The temporary tunnel origin is built into the native patch; if it changes, update the origin and rebuild or use a permanent domain.
 
 Run `python hud-demo/test_serve.py`, existing media tests, and `npm run build`. `hud-demo/four-phone-smoke.cjs` checks four independent synthetic publishers, automatic assignments, fifth-phone rejection, panel counts 1/2/3/4, portrait edges, independent stop and cleanup. Native TypeScript/lint passes do not replace Xcode/iPhone capture tests.
+
+## Shared waypoint (1.5.0)
+
+In the amber Shared waypoint dashboard panel, choose the one phone allowed to place. That phone taps Place waypoint, then taps a visible surface. One world-space waypoint is shared; setting another replaces it. Choose Nobody to revoke placement or Clear waypoint to remove the point. Native waypoints use an amber diamond/orange marker, distinct from green phone markers. Other phones wait for valid AR alignment instead of showing a guessed location.
+
+**A new native patch/rebuild is required on every participating phone:** apply [shared-waypoint.patch](iphone-hud/shared-waypoint.patch) after the automatic-four-stream patch; see [SHARED-WAYPOINT.md](iphone-hud/SHARED-WAYPOINT.md) for installation and physical device acceptance checks. Existing broadcasting still works without the update. Grants/waypoints are session-scoped and kept in memory, not a location history. The existing public dashboard controls grants without adding a login.

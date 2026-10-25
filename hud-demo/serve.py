@@ -10,6 +10,7 @@ import re
 import secrets
 import threading
 import time
+from waypoint import WaypointRoom
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
@@ -49,6 +50,8 @@ class Handler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
+        if self.path == '/waypoint':
+            return self.reply_json(200, self.server.waypoint.public())
         if self.path == '/broadcast/slots':
             try:
                 self.reply_json(200, {'streams': live_streams(self.server), 'capacity': 4})
@@ -67,6 +70,18 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
+        if self.path in ('/waypoint/grant', '/waypoint/clear', '/waypoint/phone', '/waypoint/set'):
+            try:
+                size = int(self.headers.get('Content-Length', '0'))
+                if self.headers.get('Transfer-Encoding') or not 0 < size <= 2048:
+                    return self.send_error(400)
+                payload = json.loads(self.rfile.read(size))
+                if not isinstance(payload, dict):
+                    return self.reply_json(400, {'error': 'Invalid request'})
+                status, result = self.server.waypoint.command(self.path.rsplit('/', 1)[1], payload)
+                return self.reply_json(status, result)
+            except (ValueError, TypeError):
+                return self.reply_json(400, {'error': 'Invalid request'})
         if self.path not in ('/broadcast/claim', '/broadcast/release'):
             return self.proxy()
         try:
@@ -81,6 +96,7 @@ class Handler(SimpleHTTPRequestHandler):
                 self.server.leases = {token: lease for token, lease in self.server.leases.items() if lease[1] > now}
                 if self.path == '/broadcast/release':
                     self.server.leases.pop(payload.get('lease'), None)
+                    self.server.waypoint.remove(payload.get('lease'))
                     return self.reply_json(200, {'released': True})
                 occupied = set(live_streams(self.server)) | {lease[0] for lease in self.server.leases.values()}
                 name = next((name for name in STREAMS if name not in occupied), None)
@@ -88,6 +104,7 @@ class Handler(SimpleHTTPRequestHandler):
                     return self.reply_json(409, {'error': 'All four phone slots are busy. Stop a broadcast and try again.'})
                 token = secrets.token_urlsafe(24)
                 self.server.leases[token] = (name, now + 90)
+                self.server.waypoint.register(token, name)
                 self.reply_json(200, {'stream': name, 'path': '/media/' + name + '/whip', 'lease': token, 'expiresIn': 90})
         except (ValueError, TypeError):
             self.reply_json(400, {'error': 'Invalid request'})
@@ -160,6 +177,7 @@ def make_server(directory, secrets, port=35174, gateway_port=28889, api_port=299
     server.api_port = api_port
     server.slot_lock = threading.Lock()
     server.leases = {}
+    server.waypoint = WaypointRoom()
     return server
 
 

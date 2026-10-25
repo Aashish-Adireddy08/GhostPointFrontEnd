@@ -1,0 +1,10 @@
+.waypoint-panel{margin-top:20px;padding:18px;border:1px solid #866729;border-radius:7px;background:#211d14}
+.waypoint-panel h2{color:#ffd06b;font-size:12px;margin-bottom:18px}
+.waypoint-diamond{font-size:20px;color:#ffbd42}
+.waypoint-panel label{font-size:10px;color:#dcc69b;display:block;margin-bottom:8px}
+.waypoint-panel select{width:100%;padding:10px;background:#171811;border:1px solid #866729;border-radius:5px;color:#fff1d0;font-size:12px}
+.waypoint-panel p{font-size:11px;color:#b9aa8b;line-height:1.6}
+.waypoint-state{display:flex;align-items:center;gap:10px;padding:14px 0;color:#8c8066}
+.waypoint-state.set{color:#ffc65c}.waypoint-state>span{font-size:32px}
+.waypoint-state strong{display:block;font-size:10px;letter-spacing:1px}.waypoint-state small{display:block;font-size:10px;margin-top:5px}
+@media(max-width:760px){.hud-mode .details{display:block}.hud-mode .details>.section-title,.hud-mode .details>.details-card,.hud-mode .activity-heading,.hud-mode .event-list,.hud-mode .prototype{display:none}}

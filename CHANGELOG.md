@@ -1,5 +1,12 @@
 # Changes
 
+## 1.5.0 — 2026-10-25
+
+- Add dashboard selection of the one phone permitted to place a shared waypoint, plus revoke and clear controls.
+- Enforce one waypoint and one session-scoped placement grant on the server. New placement replaces the previous point; stale/reused sessions do not inherit permission.
+- Add an incremental native patch for tap-to-surface raycasting and a distinct amber diamond/orange marker with a WAYPOINT distance label, mapped through the existing peer AR alignment.
+- Native compilation, physical placement/alignment and ReplayKit layer verification remain required on iPhones.
+
 ## 1.4.1 — 2026-10-25
 
 - Fix token generation when running the proxy as a standalone service.
