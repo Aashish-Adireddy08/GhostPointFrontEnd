@@ -1,0 +1,2 @@
+/* Reserve the command panel's label strip below the complete portrait HUD. */
+.hud-mode .viewport video { height: calc(100% - 30px); object-fit: contain; }

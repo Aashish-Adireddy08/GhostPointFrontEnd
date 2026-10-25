@@ -2,7 +2,7 @@
 
 ## iPhone HUD broadcast
 
-Current release: **1.1.1** (public testing, no login required for viewing or publishing). The HUD viewer shows the version and source commit; the dashboard footer shows the same package version. `npm run build` writes `/version.json` containing the version, full commit SHA and UTC build time. Bump `package.json` for future releases and deploy the generated build from a clean commit.
+Current release: **1.2.0** (public testing, no login required for viewing or publishing). Phone broadcasts now appear directly in the original command dashboard. Click **Watch phone broadcast** on `/`, or open `/?hud=1` to start waiting automatically. The first camera panel shows the phone's complete portrait screen; the second stays idle. The footer shows the package version. `npm run build` writes `/version.json` containing the version, full commit SHA and UTC build time. Bump `package.json` for future releases and deploy the generated build from a clean commit.
 
 Open `/?hud=1` for the opt-in portrait HUD viewer. It receives the entire rendered iPhone screen through the existing WHEP receiver, with no browser camera capture. See [hud-demo/README.md](hud-demo/README.md) for the deployed authenticated HTTPS/MediaMTX path and [iphone-hud/README.md](iphone-hud/README.md) for the native app patch and Mac build/device tests. Existing dashboard and webcam modes remain available at `/`.
 

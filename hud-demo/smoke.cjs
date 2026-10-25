@@ -14,7 +14,7 @@ async function main() {
     context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(origin + '/?hud=1');
-    await page.getByRole('heading', {name: 'Ghostpoint · iPhone HUD'}).waitFor();
+    await page.getByRole('heading', {name: 'Eyes on the ground.'}).waitFor();
     const metadata = await (await page.request.get(origin + '/version.json')).json();
     console.log(JSON.stringify({version: metadata.version, commit: metadata.commit, login: 'not required'}));
     await page.evaluate(async () => {
@@ -44,9 +44,9 @@ async function main() {
     });
     await page.waitForFunction(() => window.testPublisher.pc.connectionState === 'connected', null, {timeout: 30000})
       .catch(async error => {throw new Error('Publisher media failed: ' + await page.evaluate(() => window.testPublisher.pc.connectionState) + '; ' + error.message);});
-    await page.getByRole('button', {name: 'Watch broadcast', exact: true}).click();
+    await page.getByRole('button', {name: 'Watch phone broadcast', exact: true}).click();
     await page.waitForFunction(() => document.querySelector('video').videoWidth > 0 && document.querySelector('video').currentTime > 1, null, {timeout: 30000})
-      .catch(async error => {throw new Error('Viewer media failed: ' + await page.getByRole('status').textContent() + '; ' + error.message);});
+      .catch(async error => {throw new Error('Dashboard media failed: ' + await page.locator('.feed').first().textContent() + '; ' + error.message);});
     const result = await page.evaluate(async () => {
       const video = document.querySelector('video');
       const canvas = document.createElement('canvas'); canvas.width = video.videoWidth; canvas.height = video.videoHeight;
@@ -61,7 +61,8 @@ async function main() {
     });
     if (result.top[0] < 150 || result.bottom[0] < 150 || result.height / result.width < 2) throw new Error('Portrait frame edges missing.');
     console.log(JSON.stringify({syntheticTransport: 'passed', ...result}));
-    await page.getByRole('button', {name: 'Stop viewing', exact: true}).click();
+    if (process.env.HUD_SCREENSHOT) await page.screenshot({path: process.env.HUD_SCREENSHOT, fullPage: true});
+    await page.getByRole('button', {name: 'Disconnect', exact: true}).click();
     await page.waitForFunction(() => document.querySelector('video').srcObject === null);
     await page.evaluate(async () => {
       const p = window.testPublisher;
