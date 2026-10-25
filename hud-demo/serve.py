@@ -1,10 +1,9 @@
-"""Private HTTPS-tunneled HUD viewer and restricted WHIP/WHEP proxy.
+"""Public test HUD viewer and WHIP/WHEP proxy, without client login.
 
 Secrets live in a mode-0600 runtime JSON file, never in the static bundle.
 """
 import argparse
 import base64
-import hmac
 import http.client
 import json
 import re
@@ -31,26 +30,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header('Cache-Control', 'no-store')
         super().end_headers()
 
-    def authenticated(self, role):
-        expected = self.server.credentials[role]
-        if hmac.compare_digest(self.headers.get('Authorization', ''), expected):
-            return True
-        self.send_response(401)
-        self.send_header('WWW-Authenticate', 'Basic realm="Ghostpoint HUD", charset="UTF-8"')
-        self.send_header('Cache-Control', 'no-store')
-        self.send_header('Connection', 'close')
-        self.send_header('Content-Length', '0')
-        self.end_headers()
-        self.close_connection = True
-        return False
-
     def do_GET(self):
-        if self.authenticated('viewer'):
-            super().do_GET()
+        super().do_GET()
 
     def do_HEAD(self):
-        if self.authenticated('viewer'):
-            super().do_HEAD()
+        super().do_HEAD()
 
     def proxy(self):
         path = urlsplit(self.path)
@@ -59,8 +43,6 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
             return
         role = 'publisher' if match[1] == 'whip' else 'viewer'
-        if not self.authenticated(role):
-            return
         if self.command not in ('POST', 'DELETE', 'OPTIONS') or (self.command == 'POST' and match[2]):
             self.send_error(405)
             return

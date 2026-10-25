@@ -5,20 +5,19 @@ const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 async function main() {
   const identity = process.env.HUD_SSH_IDENTITY;
   if (!identity) throw new Error('Set HUD_SSH_IDENTITY to the working SSH private key path.');
-  const remote = 'r=/home/aashish/.local/share/ghostpoint-frontend/releases/hud-20261025/runtime; cat "$r/credentials.json"; cat "$r/https-url"';
+  const remote = 'cat /home/aashish/.local/share/ghostpoint-frontend/releases/hud-20261025/runtime/https-url';
   const output = execFileSync('ssh', ['-i', identity, '-o', 'BatchMode=yes', 'aashish@64.177.50.116', remote], {encoding: 'utf8'});
-  const end = output.indexOf('}');
-  const secrets = JSON.parse(output.slice(0, end + 1));
-  const origin = output.slice(end + 1).trim();
+  const origin = output.trim();
   const browser = await chromium.launch({headless: true, executablePath: process.env.CHROME_PATH});
   let context;
   try {
-    context = await browser.newContext({httpCredentials: {username: 'hud-viewer', password: secrets.view_password}});
+    context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(origin + '/?hud=1');
     await page.getByRole('heading', {name: 'Ghostpoint · iPhone HUD'}).waitFor();
-    const auth = 'Basic ' + Buffer.from('hud-publisher:' + secrets.publish_password).toString('base64');
-    await page.evaluate(async ({auth}) => {
+    const metadata = await (await page.request.get(origin + '/version.json')).json();
+    console.log(JSON.stringify({version: metadata.version, commit: metadata.commit, login: 'not required'}));
+    await page.evaluate(async () => {
       const canvas = document.createElement('canvas'); canvas.width = 390; canvas.height = 844;
       const ctx = canvas.getContext('2d');
       let frame = 0;
@@ -37,12 +36,12 @@ async function main() {
         const timeout = setTimeout(() => reject(new Error('ICE timeout')), 15000);
         pc.onicegatheringstatechange = () => {if (pc.iceGatheringState === 'complete') {clearTimeout(timeout); resolve();}};
       });
-      const response = await fetch('/media/hud/whip', {method: 'POST', headers: {'Authorization': auth, 'Content-Type': 'application/sdp'}, body: pc.localDescription.sdp});
+      const response = await fetch('/media/hud/whip', {method: 'POST', headers: {'Content-Type': 'application/sdp'}, body: pc.localDescription.sdp});
       if (response.status !== 201) throw new Error('WHIP HTTP ' + response.status);
       const resource = new URL(response.headers.get('Location'), location.origin).href;
       await pc.setRemoteDescription({type: 'answer', sdp: await response.text()});
-      window.testPublisher = {pc, stream, resource, auth};
-    }, {auth});
+      window.testPublisher = {pc, stream, resource};
+    });
     await page.waitForFunction(() => window.testPublisher.pc.connectionState === 'connected', null, {timeout: 30000})
       .catch(async error => {throw new Error('Publisher media failed: ' + await page.evaluate(() => window.testPublisher.pc.connectionState) + '; ' + error.message);});
     await page.getByRole('button', {name: 'Watch broadcast', exact: true}).click();
@@ -66,7 +65,7 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('video').srcObject === null);
     await page.evaluate(async () => {
       const p = window.testPublisher;
-      const response = await fetch(p.resource, {method: 'DELETE', headers: {Authorization: p.auth}});
+      const response = await fetch(p.resource, {method: 'DELETE'});
       if (response.status !== 200) throw new Error('WHIP DELETE HTTP ' + response.status);
       p.pc.close(); p.stream.getTracks().forEach(t => t.stop()); clearInterval(window.testDraw);
     });

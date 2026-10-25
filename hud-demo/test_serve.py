@@ -52,16 +52,17 @@ class ProxyTests(unittest.TestCase):
         connection.close()
         return result
 
-    def test_authentication_and_role_separation(self):
-        self.assertEqual(self.request('GET', '/')[0], 401)
-        self.assertEqual(self.request('GET', '/', 'viewer')[2], b'viewer')
-        self.assertEqual(self.request('POST', '/media/hud/whip', 'viewer')[0], 401)
-        self.assertEqual(self.request('POST', '/media/hud/whep', 'publisher')[0], 401)
-        self.assertFalse(self.requests)
+    def test_test_mode_needs_no_client_credentials(self):
+        status, headers, body = self.request('GET', '/')
+        self.assertEqual(status, 200)
+        self.assertEqual(body, b'viewer')
+        self.assertNotIn('WWW-Authenticate', headers)
+        for endpoint in ('whip', 'whep'):
+            self.assertEqual(self.request('POST', '/media/hud/' + endpoint)[0], 201)
 
     def test_protocol_proxy_and_same_origin_location(self):
         for path, role in (('/media/hud/whip', 'publisher'), ('/media/hud/whep', 'viewer')):
-            status, headers, body = self.request('POST', path, role)
+            status, headers, body = self.request('POST', path)
             self.assertEqual(status, 201)
             self.assertEqual(body, b'answer')
             self.assertEqual(headers['Location'], path + '/session-id')

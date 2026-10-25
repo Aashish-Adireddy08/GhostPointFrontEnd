@@ -67,7 +67,7 @@ diff --git a/modules/uwb-ar/BroadcastControls.tsx b/modules/uwb-ar/BroadcastCont
 new file mode 100644
 --- /dev/null
 +++ b/modules/uwb-ar/BroadcastControls.tsx
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,43 @@
 +import { useEffect, useState } from 'react';
 +import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 +import { requireNativeModule } from 'expo';
@@ -77,7 +77,6 @@ new file mode 100644
 +
 +export function BroadcastControls() {
 +  const [url, setUrl] = useState('');
-+  const [password, setPassword] = useState('');
 +  const [status, setStatus] = useState<BroadcastStatus>({ state: 'stopped' });
 +  const [pending, setPending] = useState(false);
 +  const active = !['stopped', 'error'].includes(status.state);
@@ -89,7 +88,7 @@ new file mode 100644
 +    setPending(true);
 +    try {
 +      if (active) await native.stopBroadcast();
-+      else await native.startBroadcast(url.trim(), password);
++      else await native.startBroadcast(url.trim(), '');
 +    } catch (error) {
 +      setStatus({ state: 'error', message: error instanceof Error ? error.message : 'Broadcast failed' });
 +    } finally { setPending(false); }
@@ -99,11 +98,9 @@ new file mode 100644
 +      {!active && <>
 +        <TextInput style={styles.input} value={url} onChangeText={setUrl} placeholder="HTTPS HUD WHIP URL"
 +          placeholderTextColor="#bbb" autoCapitalize="none" autoCorrect={false} keyboardType="url" accessibilityLabel="HUD WHIP URL" />
-+        <TextInput style={styles.input} value={password} onChangeText={setPassword} placeholder="Publishing password"
-+          placeholderTextColor="#bbb" secureTextEntry autoCapitalize="none" autoCorrect={false} accessibilityLabel="Publishing password" />
 +      </>}
 +      <Button title={active ? 'Stop Broadcast' : 'Start Broadcast'} onPress={toggle}
-+        disabled={pending || (!active && (!url.trim() || !password))} />
++        disabled={pending || (!active && !url.trim())} />
 +      <Text style={styles.status} accessibilityLiveRegion="polite">Broadcast: {status.state}{status.message ? ` Â· ${status.message}` : ''}</Text>
 +    </View>
 +  );
@@ -166,14 +163,14 @@ new file mode 100644
 +        guard pc == nil, !stoppingCapture, !startingCapture else { throw failure("Broadcast is busy; stop it before restarting.") }
 +        guard let url = URL(string: value), url.scheme == "https", url.host != nil,
 +              url.user == nil, url.password == nil, url.query == nil, url.fragment == nil,
-+              url.path == "/media/hud/whip", !password.isEmpty else {
-+            throw failure("Enter the HTTPS HUD WHIP URL and publishing password.")
++              url.path == "/media/hud/whip" else {
++            throw failure("Enter the HTTPS HUD WHIP URL.")
 +        }
 +        guard recorder.isAvailable, !recorder.isRecording else { throw failure("Screen capture is unavailable or already in use.") }
 +        generation = UUID()
 +        let run = generation
 +        endpoint = url
-+        authorization = "Basic " + Data("hud-publisher:\(password)".utf8).base64EncodedString()
++        authorization = password.isEmpty ? "" : "Basic " + Data("hud-publisher:\(password)".utf8).base64EncodedString()
 +        let config = RTCConfiguration()
 +        config.sdpSemantics = .unifiedPlan
 +        config.iceServers = [] // Public server candidates arrive in the WHIP answer.
@@ -320,7 +317,7 @@ new file mode 100644
 +                self.resource = safe
 +                guard error == nil, http?.statusCode == 201, let safe,
 +                      let data, let answer = String(data: data, encoding: .utf8) else {
-+                    self.fail("WHIP publishing failed (HTTP \(http?.statusCode ?? 0)). Check URL and publishing password.")
++                    self.fail("WHIP publishing failed (HTTP \(http?.statusCode ?? 0)). Check the URL and server status.")
 +                    return
 +                }
 +                self.resource = safe

@@ -44,20 +44,16 @@ References checked:
 On your test iPhone enter:
 
 - WHIP URL: `https://parents-costumes-eco-threshold.trycloudflare.com/media/hud/whip`
-- Publishing password: obtain privately over SSH using the command below; username `hud-publisher` is supplied by native code.
+- Version 1.1.1 testing mode requires no username or publishing password. The controls only ask for the HTTPS WHIP URL.
 
-On an authorized machine:
-```sh
-ssh aashish@64.177.50.116 'cat /home/aashish/.local/share/ghostpoint-frontend/releases/hud-20261025/runtime/credentials.json'
-```
-Keep this output private. Do not paste it into source, build environment variables, client bundles, issue trackers or chat. It contains separate `publish_password` and `view_password` values. These are broadcast credentials, unrelated to SSH key passphrases or Linux account passwords.
+The server keeps its existing credentials only between the proxy and loopback MediaMTX listener. They are not required from test users or included in the app. Anyone with the public test URL can view or publish video.
 
 1. Pair with another UWB-capable iPhone so markers/tags actually render; do not simulate success by showing only the camera. Start Broadcast and accept iOS capture consent.
-2. On a browser open `https://parents-costumes-eco-threshold.trycloudflare.com/?hud=1`. Authenticate as `hud-viewer` with `view_password`, then click Watch broadcast.
+2. On a browser open `https://parents-costumes-eco-threshold.trycloudflare.com/?hud=1` and click Watch broadcast. No login is required in version 1.1.1.
 3. Compare the physical phone and browser side by side. Verify the moving camera background, RealityKit marker dots, native name/distance tags, and React Native name/status cards. Move a peer off screen to verify RN arrows and their labels; exercise stale/waiting states to verify bottom cards. All four layers must be visible in the received video, correctly aligned and oriented, without cropped top/bottom edges.
 4. If any layer is black, absent, stale independently of the phone, or cropped, STOP: the goal has not been met. Save the iOS version/device, Xcode build error or a consented screen comparison and investigate before reporting success. No camera-only fallback is included.
 5. Verify UWB updates, discovery/reconnection, alignment and person snapping still behave as before with broadcasting on and off.
-6. Stop Broadcast. The browser must stop receiving new frames; restarting should create a fresh session. Repeat rapid Start/Stop, deny capture permission, use a wrong publishing password, background the app and interrupt networking. Capture/resources should stop with an error/status; no microphone use or recording file should appear. Re-enter the foreground and Start explicitly; there is no automatic background broadcast.
+6. Stop Broadcast. The browser must stop receiving new frames; restarting should create a fresh session. Repeat rapid Start/Stop, deny capture permission, use a wrong endpoint, background the app and interrupt networking. Capture/resources should stop with an error/status; no microphone use or recording file should appear. Re-enter the foreground and Start explicitly; there is no automatic background broadcast.
 
 ## Actual checks performed here
 

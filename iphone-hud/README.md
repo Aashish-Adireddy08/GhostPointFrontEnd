@@ -11,6 +11,6 @@ git apply --check /path/to/GhostPointFrontEnd/iphone-hud/uwbhud-broadcast.patch
 git apply /path/to/GhostPointFrontEnd/iphone-hud/uwbhud-broadcast.patch
 ```
 
-If the check fails, stop and reconcile your app's changes; do not reset or overwrite them. See [DEVICE-TEST.md](DEVICE-TEST.md) for Mac build/install commands, endpoint configuration, credential retrieval through SSH, actual verification results and the required four-layer HUD acceptance test.
+If the check fails, stop and reconcile your app's changes; do not reset or overwrite them. See [DEVICE-TEST.md](DEVICE-TEST.md) for Mac build/install commands, endpoint configuration, password-free test configuration, actual verification results and the required four-layer HUD acceptance test.
 
 Native iOS compilation, signing, device installation and actual HUD capture remain unverified. The external synthetic browser transport test passed; it does not prove any iPhone HUD layer is captured. TURN remains unconfigured for restrictive networks.
